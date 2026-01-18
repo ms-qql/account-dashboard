@@ -340,7 +340,10 @@ if raw_df.empty:
 
 # Strategy Selection
 strategies = ["Total_Account"] + sorted(raw_df['strategy'].unique().tolist())
-selected_strategy = st.sidebar.selectbox("Strategy", strategies)
+if st.session_state['role'] == 'admin':
+    selected_strategy = st.sidebar.selectbox("Strategy", strategies)
+else:
+    selected_strategy = "Total_Account"
 
 # Prototype-like Date Selection
 min_date = pd.to_datetime(raw_df['date_world']).min().to_pydatetime()
@@ -357,13 +360,22 @@ with col_y:
 
 st.sidebar.caption("(dates always beginning of month)")
 
-st.sidebar.markdown("### Graph Selection")
-show_balance = st.sidebar.checkbox("Balance", value=True)
-show_daily_charts = st.sidebar.checkbox("Show Daily Charts", value=True)
-show_weekly_charts = st.sidebar.checkbox("Show Weekly Charts", value=True)
-show_monthly_charts = st.sidebar.checkbox("Show Monthly Charts", value=True)
-show_quarterly_charts = st.sidebar.checkbox("Show Quarterly Charts", value=True)
-show_strategy_breakdown = st.sidebar.checkbox("Show Strategy Breakdown", value=True)
+if st.session_state['role'] == 'admin':
+    st.sidebar.markdown("### Graph Selection")
+    show_balance = st.sidebar.checkbox("Balance", value=True)
+    show_daily_charts = st.sidebar.checkbox("Show Daily Charts", value=True)
+    show_weekly_charts = st.sidebar.checkbox("Show Weekly Charts", value=True)
+    show_monthly_charts = st.sidebar.checkbox("Show Monthly Charts", value=True)
+    show_quarterly_charts = st.sidebar.checkbox("Show Quarterly Charts", value=True)
+    show_strategy_breakdown = st.sidebar.checkbox("Show Strategy Breakdown", value=True)
+else:
+    # Forced defaults for 'user' role
+    show_balance = True
+    show_daily_charts = False
+    show_weekly_charts = False
+    show_monthly_charts = True
+    show_quarterly_charts = False
+    show_strategy_breakdown = False
 # User request: "please always use the default and remove the exclude the exclude deposits checkbox"
 # Default was Exclude Deposits = True, so we always use net_pnl
 exclude_deposits = True 
@@ -667,29 +679,30 @@ if show_monthly_charts:
     # Change date to month name/year for better readability
     monthly_df['Month'] = monthly_df['date_world'].dt.strftime('%b %Y')
     
-    # Monthly PnL
-    fig_monthly = px.bar(monthly_df, x='Month', y=pnl_col,
-                 color=pnl_col, 
-                 color_continuous_scale=['red', 'green'], 
-                 color_continuous_midpoint=0,
-                 title="Monthly PnL")
-    fig_monthly.update_layout(
-        height=250, 
-        margin=dict(l=20, r=20, t=30, b=20),
-        xaxis_title=None, 
-        yaxis_title=None,
-        coloraxis_showscale=False,
-        paper_bgcolor=chart_bg_color,
-        plot_bgcolor=chart_bg_color,
-        font=dict(color=chart_font_color),
-        title_font_color=chart_font_color
-    )
-    fig_monthly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_monthly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_monthly.update_traces(hovertemplate="Month: %{x}<br>PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_monthly, width="stretch")
+    # Monthly PnL (Visible only for admin)
+    if st.session_state['role'] == 'admin':
+        fig_monthly = px.bar(monthly_df, x='Month', y=pnl_col,
+                     color=pnl_col, 
+                     color_continuous_scale=['red', 'green'], 
+                     color_continuous_midpoint=0,
+                     title="Monthly PnL")
+        fig_monthly.update_layout(
+            height=250, 
+            margin=dict(l=20, r=20, t=30, b=20),
+            xaxis_title=None, 
+            yaxis_title=None,
+            coloraxis_showscale=False,
+            paper_bgcolor=chart_bg_color,
+            plot_bgcolor=chart_bg_color,
+            font=dict(color=chart_font_color),
+            title_font_color=chart_font_color
+        )
+        fig_monthly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+        fig_monthly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+        fig_monthly.update_traces(hovertemplate="Month: %{x}<br>PnL: $%{y:,.2f}<extra></extra>")
+        st.plotly_chart(fig_monthly, width="stretch")
     
-    # Cumulative Monthly PnL
+    # Cumulative Monthly PnL (Visible for all)
     fig_monthly_cum = px.bar(monthly_df, x='Month', y='cum_pnl',
                  color='cum_pnl', 
                  color_continuous_scale=['red', 'green'], 
