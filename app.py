@@ -168,9 +168,9 @@ if dark_mode:
     chart_grid_color = "LightGray"
     chart_bg_color = "rgba(0,0,0,0)"
 else:
-    chart_font_color = "#000000" # White text for black backgrounds
-    chart_grid_color = "LightGray" # Gray grid on black backgrounds
-    chart_bg_color = "#ffffff"    # Black chart background requested
+    chart_font_color = "#333333" # Dark gray text for light backgrounds
+    chart_grid_color = "#e5e5e5" # Light grid for light backgrounds
+    chart_bg_color = "#ffffff"    # white chart background requested
 
 # Helper for metric cards
 def metric_card(label, value, delta=None):
@@ -387,7 +387,6 @@ if st.sidebar.button("UPDATE GRAPHS", width="stretch", type="primary"):
     st.rerun()
 
 # --- Data Loader ---
-# --- Data Loader ---
 if st.session_state['role'] == 'admin':
     st.sidebar.markdown("### Data Loader")
     
@@ -492,9 +491,6 @@ with st.sidebar.expander("Security Settings"):
                     st.error("Incorrect current password.")
 
 # --- Data Processing (End of Data Loader block logic, but Data Processing is global) ---
-# Indent "LOAD DATA" button block logic above only?
-# The button block was lines 274-336. I need to make sure I only wrapped the Loader UI and Button.
-# The Data Processing below (line 339) should happen regardless of admin status.
 
 
 # --- Data Processing ---
@@ -511,8 +507,6 @@ if proc_df.empty:
 pnl_col = 'net_pnl'
 
 # Recalculate cum_pnl for the filtered view so charts start at 0 (or correct accumulated value relative to start date)
-# The user wants "final number should match the P&L since startyear value"
-# So cum_pnl should be the accumulation of the visible pnl_col
 proc_df['cum_pnl'] = proc_df[pnl_col].cumsum()
 
 # --- Main Dashboard ---
@@ -575,10 +569,10 @@ if show_balance:
         legend=dict(y=1.1, x=0, orientation='h', font=dict(color=chart_font_color)),
         font=dict(color=chart_font_color)
     )
-    fig_equity.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_equity.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_equity.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_equity.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_equity.update_traces(hovertemplate="Date: %{x}<br>Balance: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_equity, width="stretch")
+    st.plotly_chart(fig_equity, use_container_width=True, theme=None)
 
 # 2. Daily Charts
 if show_daily_charts:
@@ -599,10 +593,10 @@ if show_daily_charts:
         font=dict(color=chart_font_color),
         title_font_color=chart_font_color
     )
-    fig_daily.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_daily.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_daily.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_daily.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_daily.update_traces(hovertemplate="Date: %{x}<br>PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_daily, width="stretch")
+    st.plotly_chart(fig_daily, use_container_width=True, theme=None)
     
     # Cumulative Daily PnL
     fig_daily_cum = px.bar(proc_df, x='date_world', y='cum_pnl',
@@ -621,10 +615,10 @@ if show_daily_charts:
         font=dict(color=chart_font_color),
         title_font_color=chart_font_color
     )
-    fig_daily_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_daily_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_daily_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_daily_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_daily_cum.update_traces(hovertemplate="Date: %{x}<br>Cum PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_daily_cum, width="stretch")
+    st.plotly_chart(fig_daily_cum, use_container_width=True, theme=None)
 
 # 3. Weekly Charts
 if show_weekly_charts:
@@ -646,10 +640,10 @@ if show_weekly_charts:
         font=dict(color=chart_font_color),
         title_font_color=chart_font_color
     )
-    fig_weekly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_weekly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_weekly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_weekly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_weekly.update_traces(hovertemplate="Week: %{x}<br>PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_weekly, width="stretch")
+    st.plotly_chart(fig_weekly, use_container_width=True, theme=None)
     
     # Cumulative Weekly PnL
     fig_weekly_cum = px.bar(weekly_df, x='date_world', y='cum_pnl',
@@ -668,10 +662,10 @@ if show_weekly_charts:
         font=dict(color=chart_font_color),
         title_font_color=chart_font_color
     )
-    fig_weekly_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_weekly_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_weekly_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_weekly_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_weekly_cum.update_traces(hovertemplate="Week: %{x}<br>Cum PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_weekly_cum, width="stretch")
+    st.plotly_chart(fig_weekly_cum, use_container_width=True, theme=None)
 
 # 4. Monthly Charts
 if show_monthly_charts:
@@ -697,10 +691,10 @@ if show_monthly_charts:
             font=dict(color=chart_font_color),
             title_font_color=chart_font_color
         )
-        fig_monthly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-        fig_monthly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+        fig_monthly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+        fig_monthly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
         fig_monthly.update_traces(hovertemplate="Month: %{x}<br>PnL: $%{y:,.2f}<extra></extra>")
-        st.plotly_chart(fig_monthly, width="stretch")
+        st.plotly_chart(fig_monthly, use_container_width=True, theme=None)
     
     # Cumulative Monthly PnL (Visible for all)
     fig_monthly_cum = px.bar(monthly_df, x='Month', y='cum_pnl',
@@ -719,10 +713,10 @@ if show_monthly_charts:
         font=dict(color=chart_font_color),
         title_font_color=chart_font_color
     )
-    fig_monthly_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_monthly_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_monthly_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_monthly_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_monthly_cum.update_traces(hovertemplate="Month: %{x}<br>Cum PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_monthly_cum, width="stretch")
+    st.plotly_chart(fig_monthly_cum, use_container_width=True, theme=None)
 
 # 5. Quarterly Charts
 if show_quarterly_charts:
@@ -747,10 +741,10 @@ if show_quarterly_charts:
         font=dict(color=chart_font_color),
         title_font_color=chart_font_color
     )
-    fig_quarterly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_quarterly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_quarterly.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_quarterly.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_quarterly.update_traces(hovertemplate="Quarter: %{x}<br>PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_quarterly, width="stretch")
+    st.plotly_chart(fig_quarterly, use_container_width=True, theme=None)
     
     # Cumulative Quarterly PnL
     fig_quarterly_cum = px.bar(quarterly_df, x='Quarter', y='cum_pnl',
@@ -769,10 +763,10 @@ if show_quarterly_charts:
         font=dict(color=chart_font_color),
         title_font_color=chart_font_color
     )
-    fig_quarterly_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_quarterly_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
+    fig_quarterly_cum.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_quarterly_cum.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
     fig_quarterly_cum.update_traces(hovertemplate="Quarter: %{x}<br>Cum PnL: $%{y:,.2f}<extra></extra>")
-    st.plotly_chart(fig_quarterly_cum, width="stretch")
+    st.plotly_chart(fig_quarterly_cum, use_container_width=True, theme=None)
 
 # --- New Feature: Monthly Heatmap ---
 st.markdown("### Monthly Performance Heatmap")
@@ -805,7 +799,10 @@ if not heatmap_pct.empty:
         plot_bgcolor=chart_bg_color,
         font=dict(color=chart_font_color)
     )
-    st.plotly_chart(fig_heatmap, width="stretch")
+    fig_heatmap.update_xaxes(tickfont=dict(color=chart_font_color))
+    fig_heatmap.update_yaxes(tickfont=dict(color=chart_font_color))
+    fig_heatmap.update_layout(coloraxis_colorbar=dict(tickfont=dict(color=chart_font_color)))
+    st.plotly_chart(fig_heatmap, use_container_width=True, theme=None)
 
 # --- Strategy Comparison ---
 if selected_strategy == "Total_Account" and show_strategy_breakdown:
@@ -824,9 +821,9 @@ if selected_strategy == "Total_Account" and show_strategy_breakdown:
         font=dict(color=chart_font_color),
         legend=dict(font=dict(color=chart_font_color))
     )
-    fig_strat.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    fig_strat.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color)
-    st.plotly_chart(fig_strat, width="stretch")
+    fig_strat.update_xaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    fig_strat.update_yaxes(showgrid=True, gridwidth=1, gridcolor=chart_grid_color, tickfont=dict(color=chart_font_color))
+    st.plotly_chart(fig_strat, use_container_width=True, theme=None)
 
 # --- Footnote ---
 st.markdown("---")
