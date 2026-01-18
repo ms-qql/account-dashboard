@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from db_utils import get_connection, fetch_data
+from db_utils import get_connection, fetch_data, verify_user, update_user_password
 from data_processing import process_account_data, resample_data, calculate_monthly_heatmap_data
 from datetime import datetime
 
@@ -21,24 +21,16 @@ if 'authenticated' not in st.session_state:
     st.session_state['username'] = None
 
 def check_login(username, password):
-    # Default credentials for demo purposes / fallback
-    # In production, use st.secrets["auth"]
-    users = {
-        "user1_ms": {"password": "password123", "role": "admin"},
-        "user2_jf": {"password": "password456", "role": "user"}
-    }
-    
-    # Try to load from secrets if available
-    if "auth" in st.secrets:
-        # Expected format: [auth.users] user1_ms = "pass" ...
-        # Or [auth] user1_ms = "pass"
-        # Since I can't see secrets structure fully, I'll rely on hardcoded fallback 
-        # but try to match against user request logic.
-        pass
+    # Use database-backed verification
+    # We use 'user1' (or any valid db user key) to connection to the DB
+    # since all users are stored in the same central table for now.
+    user_key = "user1" 
+    if "database" in st.secrets and "users" in st.secrets["database"]:
+        # Try to find a valid key from secrets if available
+        user_key = st.secrets["database"]["users"][0]
 
-    if username in users and users[username]['password'] == password:
-        return users[username]['role']
-    return None
+    authenticated, role = verify_user(user_key, username, password)
+    return role if authenticated else None
 
 if not st.session_state['authenticated']:
     # Show Login Form
@@ -453,6 +445,39 @@ if st.session_state['role'] == 'admin':
         # Or add a "st.button('Refresh')" if updated.
         if any_success:
              st.sidebar.info("Data saved. Please click 'UPDATE GRAPHS' to refresh.")
+
+# --- Security Settings ---
+st.sidebar.markdown("---")
+with st.sidebar.expander("Security Settings"):
+    st.markdown("#### Change Password")
+    with st.form("change_password_form"):
+        curr_pass = st.text_input("Current Password", type="password")
+        new_pass = st.text_input("New Password", type="password")
+        conf_pass = st.text_input("Confirm New Password", type="password")
+        submit_pass = st.form_submit_button("Update Password", use_container_width=True)
+        
+        if submit_pass:
+            if not curr_pass or not new_pass or not conf_pass:
+                st.error("All fields are required.")
+            elif new_pass != conf_pass:
+                st.error("New passwords do not match.")
+            else:
+                # 1. Verify current password
+                # Use the same logic as login to find user_key
+                user_key = "user1" 
+                if "database" in st.secrets and "users" in st.secrets["database"]:
+                    user_key = st.secrets["database"]["users"][0]
+                
+                auth_ok, _ = verify_user(user_key, st.session_state['username'], curr_pass)
+                
+                if auth_ok:
+                    # 2. Update to new password
+                    if update_user_password(user_key, st.session_state['username'], new_pass):
+                        st.success("Password updated successfully!")
+                    else:
+                        st.error("Failed to update password. Check logs.")
+                else:
+                    st.error("Incorrect current password.")
 
 # --- Data Processing (End of Data Loader block logic, but Data Processing is global) ---
 # Indent "LOAD DATA" button block logic above only?

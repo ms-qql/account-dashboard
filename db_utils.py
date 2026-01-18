@@ -3,7 +3,8 @@ import streamlit as st
 import pandas as pd
 from typing import List, Optional
 from sqlalchemy import create_engine
-from urllib.parse import quote_plus
+import bcrypt
+from datetime import datetime
 
 def get_connection(user_key: str):
     """
@@ -182,6 +183,115 @@ def insert_account_data(user_key: str, data_dict: dict, table_name: str = None):
         
     except Exception as e:
         st.error(f"Error inserting data for {user_key}: {e}")
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False
+
+def initialize_user_table(user_key: str):
+    """
+    Creates the account_dashboard_users table and inserts initial hashed credentials.
+    """
+    conn = get_connection(user_key)
+    if conn is None:
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Create table if not exists
+        create_query = """
+            CREATE TABLE IF NOT EXISTS account_dashboard_users (
+                username TEXT PRIMARY KEY,
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL
+            )
+        """
+        cursor.execute(create_query)
+        
+        # Check if users already exist to avoid duplicates or overwriting
+        cursor.execute("SELECT COUNT(*) FROM account_dashboard_users")
+        if cursor.fetchone()[0] == 0:
+            # Initial users and their current passwords
+            initial_users = {
+                "user1_ms": {"password": "password123", "role": "admin"},
+                "user2_jf": {"password": "password456", "role": "user"}
+            }
+            
+            for username, info in initial_users.items():
+                password_hash = bcrypt.hashpw(info['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                cursor.execute(
+                    "INSERT INTO account_dashboard_users (username, password_hash, role) VALUES (%s, %s, %s)",
+                    (username, password_hash, info['role'])
+                )
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        st.error(f"Error initializing user table for {user_key}: {e}")
+        if conn:
+            conn.rollback()
+            conn.close()
+        return False
+
+def verify_user(user_key: str, username: str, password: str):
+    """
+    Verifies user credentials against the account_dashboard_users table.
+    Returns (authenticated: bool, role: str or None)
+    """
+    conn = get_connection(user_key)
+    if conn is None:
+        return False, None
+    
+    try:
+        cursor = conn.cursor()
+        query = "SELECT password_hash, role FROM account_dashboard_users WHERE username = %s"
+        cursor.execute(query, (username,))
+        result = cursor.fetchone()
+        
+        if result:
+            password_hash, role = result
+            if bcrypt.checkpw(password.encode('utf-8'), password_hash.encode('utf-8')):
+                return True, role
+        
+        cursor.close()
+        conn.close()
+        return False, None
+    except Exception as e:
+        # If table doesn't exist, initialize it and retry once
+        if "does not exist" in str(e).lower():
+            if initialize_user_table(user_key):
+                return verify_user(user_key, username, password)
+        
+        st.error(f"Error verifying user for {user_key}: {e}")
+        if conn:
+            conn.close()
+        return False, None
+
+def update_user_password(user_key: str, username: str, new_password: str):
+    """
+    Hashes and updates the password for a user in the account_dashboard_users table.
+    Returns bool (success/failure)
+    """
+    conn = get_connection(user_key)
+    if conn is None:
+        return False
+    
+    try:
+        cursor = conn.cursor()
+        password_hash = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        
+        query = "UPDATE account_dashboard_users SET password_hash = %s WHERE username = %s"
+        cursor.execute(query, (password_hash, username))
+        
+        conn.commit()
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        st.error(f"Error updating password for {username}: {e}")
         if conn:
             conn.rollback()
             conn.close()
