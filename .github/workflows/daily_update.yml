@@ -26,9 +26,11 @@ jobs:
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Create secrets.toml
+      env:
+        SECRETS_CONTENT: ${{ secrets.SECRETS_TOML }}
       run: |
         mkdir -p .streamlit
-        echo "${{ secrets.SECRETS_TOML }}" > .streamlit/secrets.toml
+        echo "$SECRETS_CONTENT" > .streamlit/secrets.toml
       shell: bash
 
     - name: Run Update Script
