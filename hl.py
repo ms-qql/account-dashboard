@@ -1,5 +1,4 @@
-#import anvil.email
-import anvil.server
+
 
 import numpy as np
 import pandas as pd
@@ -617,7 +616,6 @@ class trade_hl():
             return f"Error: {error_msg}"
 
 
-    @anvil.server.callable
     def get_balance_collateral(self, user, subaccount=None, config_key="hyperliquid"):
         """
         Retrieve the maximum available cross margin collateral from a HyperLiquid account using CCXT.
