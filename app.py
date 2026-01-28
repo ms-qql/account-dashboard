@@ -7,6 +7,9 @@ from data_processing import process_account_data, resample_data, calculate_month
 from datetime import datetime
 
 # Page config
+import config
+
+# Page config
 st.set_page_config(page_title="Account Dashboard", layout="wide")
 
 
@@ -24,11 +27,8 @@ def check_login(username, password):
     # Use database-backed verification
     # We use 'user1' (or any valid db user key) to connection to the DB
     # since all users are stored in the same central table for now.
-    user_key = "user1" 
-    if "database" in st.secrets and "users" in st.secrets["database"]:
-        # Try to find a valid key from secrets if available
-        user_key = st.secrets["database"]["users"][0]
-
+    user_key = config.get_dashboard_users_key()
+    
     authenticated, role = verify_user(user_key, username, password)
     return role if authenticated else None
 
@@ -186,11 +186,8 @@ from data_loading import run_data_loading
 # --- Sidebar ---
 st.sidebar.markdown("### Selection")
 
-# Get users from secrets
-if "database" in st.secrets:
-    user_options = st.secrets["database"]["users"]
-else:
-    user_options = ["user1", "user2"]
+# Get users from config
+user_options = config.get_valid_users()
 
 # RBAC: Filter user options
 if st.session_state['role'] == 'user':
@@ -209,7 +206,7 @@ selected_user = st.sidebar.selectbox("User", user_options, index=0)
 # Load data for selected user
 @st.cache_data(ttl=600)
 def load_data(user):
-    table_name = st.secrets[user].get("table_name", user)
+    table_name = config.get_table_name(user)
     return fetch_data(user, table_name=table_name)
 
 raw_df = load_data(selected_user)
@@ -274,7 +271,7 @@ if st.session_state['role'] == 'admin':
 
     if st.sidebar.button("LOAD DATA", width="stretch", type="primary"):
         # Get table name & User ID
-        table_name = st.secrets[selected_user].get("table_name", selected_user)
+        table_name = config.get_table_name(selected_user)
         if selected_user == "user1":
             user_id_val = "user1_ms"
         else:
@@ -286,16 +283,17 @@ if st.session_state['role'] == 'admin':
             # Default Logic requested: User1 -> HL, User2 -> BitGet, HL, Deribit
             # Enhanced with secrets check
             
-            # Hyperliquid (Check secrets or assume based on user)
-            if selected_user == "user1" or (selected_user in st.secrets and "hyperliquid" in st.secrets[selected_user]):
-                exchanges_to_run.append("Hyperliquid")
+            # Hyperliquid (Check env or assume based on user)
+            # Default Logic: User1 -> HL, User2 -> BitGet, HL, Deribit
+            
+            # Simple heuristic: Always attempt HL for user1, and for user2
+            exchanges_to_run.append("Hyperliquid")
                 
             # BitGet
-            if selected_user == "user2" or (selected_user in st.secrets and "bitget" in st.secrets[selected_user]):
+            if selected_user == "user2":
                  exchanges_to_run.append("BitGet")
                  
             # Deribit (Copy)
-            # Only for user2 or if specifically configured? Prompt said "For user2 BitGet, Hyperliquid and Deribit"
             if selected_user == "user2":
                  exchanges_to_run.append("Deribit")
 
@@ -355,9 +353,7 @@ with st.sidebar.expander("Security Settings"):
             else:
                 # 1. Verify current password
                 # Use the same logic as login to find user_key
-                user_key = "user1" 
-                if "database" in st.secrets and "users" in st.secrets["database"]:
-                    user_key = st.secrets["database"]["users"][0]
+                user_key = config.get_dashboard_users_key()
                 
                 auth_ok, _ = verify_user(user_key, st.session_state['username'], curr_pass)
                 

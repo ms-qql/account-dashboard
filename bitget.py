@@ -72,23 +72,10 @@ class trade_bitget():
 
     def read_api_key_secret_bitget(self, user):
         """
-        Reads API credentials from streamlit secrets or environment variables.
-        1. Checks st.secrets[user]["bitget"]
-        2. Checks os.environ for BITGET_{USER}_API_KEY etc.
+        Reads API credentials from environment variables.
+        Checks os.environ for BITGET_{USER}_API_KEY etc.
         """
-        # 1. Try Secrets
-        try:
-            if user in st.secrets and "bitget" in st.secrets[user]:
-                creds = st.secrets[user]["bitget"]
-                return {
-                    'api_key': creds.get('api_key'),
-                    'api_secret': creds.get('api_secret'),
-                    'passphrase': creds.get('passphrase')
-                }
-        except Exception:
-            pass # Fallback to env
-
-        # 2. Try Environment Variables
+        # Try Environment Variables
         try:
             # Construct keys based on user (e.g. user1 -> BITGET_USER1_API_KEY)
             user_env = user.upper()
@@ -105,7 +92,7 @@ class trade_bitget():
         except Exception as e:
             print(f"Error checking env vars for {user}: {e}")
 
-        raise ValueError(f"No Bitget credentials found for user {user} in st.secrets or environment variables")
+        raise ValueError(f"No Bitget credentials found for user {user} in environment variables")
     
     def init_exchange(self, user, subaccount=None):
         """

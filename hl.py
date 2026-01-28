@@ -68,40 +68,30 @@ class trade_hl():
 
     def read_api_key_secret_hl(self, user, config_key="hyperliquid"):
         """
-        Reads API credentials from streamlit secrets or environment variables.
-        1. Checks st.secrets[user][config_key]
-        2. Checks os.environ for {CONFIG_KEY}_{USER}_API_KEY
+        Reads API credentials from environment variables.
+        Checks os.environ for {USER}_{CONFIG_KEY}_API_KEY or similar patterns.
         """
-        # 1. Try Secrets
-        try:
-            if user in st.secrets and config_key in st.secrets[user]:
-                creds = st.secrets[user][config_key]
-                return {
-                    'api_key': creds.get('api_key'), # wallet_address
-                    'api_secret': creds.get('api_secret') # private_key
-                }
-        except Exception:
-            pass # Fallback
+        # 1. Standardize formatting
+        user_env = user.upper()
+        
+        # Determine Prefix
+        # "hyperliquid" -> HL
+        # "hyperliquid2" -> HL2
+        if config_key == "hyperliquid":
+             prefix = "HL"
+        else:
+             prefix = config_key.upper() 
 
         # 2. Try Environment Variables
         try:
-            user_env = user.upper()
-            # If config_key is 'hyperliquid', use 'HL' prefix for backward compatibility/standard
-            # If config_key is 'hyperliquid2', use 'HL2' or similar? 
-            # Let's generalize: Prefix based on config_key if it starts with 'hyperliquid'
+            # Expected format: HL_USER1_MS_API_KEY ?
+            # Existing code used: f"{prefix}_{user_env}_API_KEY"
+            # user usually passed as "user1_ms" or "user1"?
+            # user argument in init is "user".
+            # In app.py: selected_user is "user1".
+            # In bitget: "user1_ms" is derived? No, passed as user.
             
-            # Simple heuristic:
-            # "hyperliquid" -> HL
-            # "hyperliquid2" -> HL2
-            # "hyperliquid_3" -> HL_3
-            
-            # Or just use the config_key.upper() as prefix?
-            # HL_{USER}.. was the previous standard.
-            
-            if config_key == "hyperliquid":
-                 prefix = "HL"
-            else:
-                 prefix = config_key.upper() # e.g. "HYPERLIQUID2"
+            # Let's try both exact user and upper case
             
             api_key = os.environ.get(f"{prefix}_{user_env}_API_KEY")
             api_secret = os.environ.get(f"{prefix}_{user_env}_API_SECRET")
@@ -114,11 +104,13 @@ class trade_hl():
         except Exception as e:
             print(f"Error checking env vars for {user}: {e}")
 
-        # Do not raise hard error, simpler to return None if not found, to allow looping?
-        # But existing code expects it raises or we handle in app.py
-        # To avoid breaking single-account users, raise error if default key.
+        # Fallback/Backward Comp: existing st.secrets check removed.
+        
         if config_key == "hyperliquid":
-            raise ValueError(f"No HyperLiquid credentials found for user {user} at {config_key}")
+            # For primary, raise error if missing
+            # But return None is also handled by caller?
+            # Caller raises ValueError if None returned for "hyperliquid".
+             return None # Let caller handle or raise
         else:
              return None
 

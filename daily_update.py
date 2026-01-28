@@ -1,4 +1,5 @@
 import streamlit as st
+import config
 from db_utils import fetch_data
 from data_loading import run_data_loading
 import sys
@@ -31,12 +32,11 @@ def main():
         
         print(f"\n=== Processing {user} ===")
         
-        if user not in st.secrets:
-            print(f"Error: User '{user}' not found in secrets. Skipping.")
-            any_failure = True
+        if not user:
+            print(f"Skipping empty user config.")
             continue
             
-        table_name = st.secrets[user].get("table_name", user)
+        table_name = config.get_table_name(user)
         
         # 1. Load existing data
         print(f"Fetching existing data for {user} from {table_name}...")

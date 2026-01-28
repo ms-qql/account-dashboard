@@ -4,6 +4,7 @@ import pandas as pd
 from bitget import trade_bitget
 from hl import trade_hl
 from db_utils import insert_account_data
+import os
 
 def run_data_loading(exchange_name, user, table_name, raw_df, user_id_val):
     try:
@@ -54,17 +55,24 @@ def run_data_loading(exchange_name, user, table_name, raw_df, user_id_val):
                 strat_name = "HL"
                 client = trade_hl(user, "main")
                 
-                # Dynamic Config Key Detection based on secrets
+                # Dynamic Config Key Detection
                 config_keys = []
-                # Always check for standard 'hyperliquid'
-                if user in st.secrets and "hyperliquid" in st.secrets[user]:
-                    config_keys.append("hyperliquid")
                 
-                # Check for secondary keys (hyperliquid2, etc.)
-                if user in st.secrets and "hyperliquid2" in st.secrets[user]:
-                    config_keys.append("hyperliquid2")
+                # Check for standard 'hyperliquid'
+                # In Env Var mode, we assume "hyperliquid" (HL prefix) is always a target if configured.
+                config_keys.append("hyperliquid")
                 
-                # Fallback if no secrets found (e.g. env vars only)
+                # Check for secondary keys (hyperliquid2, etc.) via Environment Variables?
+                # Currently we only check if define in secrets. 
+                # To support multiple accounts via Env, we'd need to seek HL2_... keys.
+                # For now, let's stick to just checking HL (main) or rely on explicit manual addition if needed.
+                # Or check if HL2_USER_API_KEY exists.
+                
+                user_env = user.upper()
+                if f"HL2_{user_env}_API_KEY" in os.environ:
+                     config_keys.append("hyperliquid2")
+                     
+                # Fallback if list empty (though we added hyperliquid)
                 if not config_keys:
                      config_keys = ["hyperliquid"]
 

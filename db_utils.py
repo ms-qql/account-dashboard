@@ -6,14 +6,19 @@ from sqlalchemy import create_engine
 import bcrypt
 from datetime import datetime
 
+import config
+from urllib.parse import quote_plus
+
 def get_connection(user_key: str):
     """
     Creates a raw psycopg2 connection to the database for a specific user.
-    Uses credentials from Streamlit secrets.
+    Uses credentials from Environment variables (via config.py).
     Used for write operations (insert/delete).
     """
     try:
-        creds = st.secrets[user_key]
+        creds = config.get_db_creds(user_key)
+        if not creds:
+             raise ValueError(f"No credentials found for {user_key}")
         
         # Check if a direct URL is provided
         if "url" in creds:
@@ -38,7 +43,9 @@ def get_db_engine(user_key: str):
     Used for reading data with pandas.
     """
     try:
-        creds = st.secrets[user_key]
+        creds = config.get_db_creds(user_key)
+        if not creds:
+             raise ValueError(f"No credentials found for {user_key}")
         
         if "url" in creds:
             # Assume URL is compatible or needs slight adjustment (e.g. postgres:// -> postgresql://)
